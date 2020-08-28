@@ -2,7 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { Product } from './../product.interface';
 import { ProductService } from "./../../services/product.service";
 import { Observable, EMPTY } from 'rxjs';
-import { catchError } from 'rxjs/operators';
+import { catchError, map, startWith, tap } from 'rxjs/operators';
 import { Router } from '@angular/router';
 
 @Component({
@@ -15,6 +15,11 @@ export class ProductListComponent implements OnInit {
   title: string = 'Products';
   products: Product[];
   products$: Observable<Product[]>;
+  mostExpensiveProduct$: Observable<Product>;
+  productsNumber$: Observable<number>;
+  productsTotalNumber$ : Observable<number>;
+
+  productsNumber: number = 0;
   selectedProduct: Product;
   errorMsg: string;
 
@@ -23,6 +28,7 @@ export class ProductListComponent implements OnInit {
   start = 0;
   end = this.pageSize;
   pageNumber = 1;
+  productsToLoad = this.pageSize * 2;
 
   previousPage() {
     this.start -= this.pageSize;
@@ -50,6 +56,13 @@ export class ProductListComponent implements OnInit {
   
   }
 
+  loadMore() {
+    let take = this.productsToLoad;
+    let skip = this.end;
+
+    this.productService.initProducts(skip, take);
+  }
+
   ngOnInit(): void {
     this.products$ = this
                       .productService
@@ -62,6 +75,18 @@ export class ProductListComponent implements OnInit {
                           }
                         )
                       );
+
+    this.mostExpensiveProduct$ = this.productService.mostExpensiveProduct$;
+
+    this.productsTotalNumber$ = this.productService.productsTotalNumber$;
+
+    this.productsNumber$ = this
+                              .products$
+                              .pipe(
+                                map(products => products.length),
+                                //tap(nombre => this.productsNumber = nombre),
+                                startWith(0)
+                              );
 
     // this
     //   .productService
